@@ -12,6 +12,7 @@
 งานนี้ยังอยู่ในขั้นตอนการทำงานอยู่
 
 ENG ver.
+
 This project focuses on developing an algorithm for partitioning both area and perimeter equally—building on the paper An Algorithmic Approach to Convex Fair Partitions of Convex Polygons. It comprises three main enhancements:
 
 Normal Flow improvements
