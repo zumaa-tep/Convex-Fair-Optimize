@@ -1,121 +1,144 @@
 # Convex Fair Partition for Biomedical Scaffolds
 
-This repository presents a stronger Convex Fair Partition workflow for scaffold design in tissue engineering. The workflow stabilizes both stages of the pipeline.
+This README presents the English only version.
 
-First, Lloyd updates use a Gaussian weighted or “fuzzy” centroid. The scale parameter sigma is chosen from polygon features. This reduces oscillation in skewed or boundary clipped cells and lowers the repetition count.
+---
 
-Second, the normal flow stage uses an adaptive step size delta that is scale aware and edge capped. Forward difference probes remain numerically resolvable and safe near boundaries. On five hundred convex polygons with five thousand random seeds per configuration, the learned sigma centroid yields about ninety nine percent time reduction at four regions while remaining competitive at seven to ten regions. The adaptive delta reduces iterations and wall time for six or more regions by about twenty to thirty five percent and up to about thirty seven percent for larger sizes.
+## Overview
+This repository strengthens the Convex Fair Partition workflow for scaffold design in tissue engineering. The Lloyd stage uses a Gaussian weighted centroid with a learned sigma from polygon features to improve stability and reduce oscillation. The normal flow stage uses an adaptive step size delta that is scale aware and edge capped so forward differences remain numerically resolvable and safe near boundaries.  
+On five hundred convex polygons with five thousand random seeds per configuration the learned sigma centroid delivers very large time savings at four regions and remains competitive at seven to ten regions. The adaptive delta reduces iterations and wall time for six or more regions by about twenty to thirty five percent and up to about thirty seven percent for larger sizes.
+
+---
 
 ## Project Structure
-
-Create the following layout in your repository. The code files can be added later.
-
 ```
-.
-├─ src/
-│  ├─ lloyd/
+
+├─ experiments/
+│  ├─ exp_sigma_models
 │  │  ├─ fuzzy_centroid.py
-│  │  └─ learn_sigma.py
-│  ├─ normal_flow/
+│  │     ├─ mutiple
+│  │     ├─ svr
+│  │     ├─ elastic
+│  │  
+│  └─ exp_normalflow_delta
 │  │  ├─ delta_fixed.py
 │  │  └─ delta_adaptive.py
-│  ├─ features/
-│  │  └─ polygon_features.py
-│  └─ pipeline/
-│     └─ run_cfp.py
-├─ experiments/
-│  ├─ exp_lloyd_centroid.yaml
-│  ├─ exp_sigma_models.yaml
-│  ├─ exp_normalflow_delta.yaml
-│  └─ exp_end2end.yaml
-├─ data/
-├─ results/
-└─ README.md
-```
+│
+├─ scaffolds (Future work)
+---
 
 ## Installation
+Use Python version 3.10 or newer. Install the following libraries: NumPy, SciPy, scikit learn, Shapely, Matplotlib, Pandas, TQDM.
 
-Use Python version 3.10 or newer. Required libraries are NumPy, SciPy, scikit learn, Shapely, Matplotlib, Pandas, and TQDM.
+```
+python -m venv .venv
+# Windows: .venv\Scriptsctivate
+# macOS or Linux:
+source .venv/bin/activate
+pip install -U pip
+pip install numpy scipy scikit-learn shapely matplotlib pandas tqdm
+```
 
-1) Create a virtual environment.  
-2) Activate the environment.  
-3) Upgrade pip with `pip install -U pip`.  
-4) Install the packages with `pip install numpy scipy scikit-learn shapely matplotlib pandas tqdm`.
+---
 
 ## Methods
 
-### Lloyd stage with fuzzy centroid
+### Lloyd stage with fuzzy centroid and learned sigma
+Compute coordinate means x bar and y bar for the convex cell vertices. Define axis wise Gaussian memberships
 
-Given convex cell vertices, compute coordinate means x bar and y bar. Define memberships
-
-- mu_x(x_i) = exp(−(x_i − x_bar)^2 / (2 sigma^2))
+- mu_x(x_i) = exp(−(x_i − x_bar)^2 / (2 sigma^2))  
 - mu_y(y_i) = exp(−(y_i − y_bar)^2 / (2 sigma^2))
 
-Compute the centroid as weighted averages:
+Compute the centroid as weighted averages
 
-- x_c = sum(mu_x * x_i) / sum(mu_x)
+- x_c = sum(mu_x * x_i) / sum(mu_x)  
 - y_c = sum(mu_y * y_i) / sum(mu_y)
 
-Round both coordinates to four decimals for deterministic stopping tests.
+Round both coordinates to four decimals for deterministic stopping checks.
 
-#### Learning sigma
-
-Represent each polygon using geometric descriptors including perimeter, angle mean, angle standard deviation, circularity, diagonal ratio, principal component aspect ratio, orientation of a canonical start vertex, normalized start radius, area, and number of sides. Train Multiple Regression, Support Vector Regression, and Elastic Net to predict a suitable sigma. A simple deployment rule is sigma equals kappa times the square root of area when size effects must be separated from shape.
+**Learning sigma**  
+Represent each polygon with geometric descriptors such as perimeter, area, number of sides, angle mean, angle standard deviation, circularity, diagonal ratio, principal component aspect ratio, start angle, and normalized start radius. Train Multiple Regression, Support Vector Regression, and Elastic Net. A simple deployment rule is sigma equals kappa times the square root of area in order to separate size from shape when needed.
 
 ### Normal flow with adaptive delta
+Two policies are considered.
 
-Two policies are considered. The fixed schedule uses delta equal to 5e−3 for the first ten iterations, then 4e−4 until iteration twenty, then 5e−5 until convergence. The adaptive policy is scale aware and uses hull bounds together with machine epsilon to keep forward differences resolvable. It also applies an edge cap on intermediate edge points so the step never exceeds a quarter of the incident edge length. A clip operator enforces lower and upper bounds.
+**Fixed schedule**  
+Delta equals 5e−3 for the first ten iterations, then 4e−4 until iteration twenty, then 5e−5 until convergence.
+
+**Adaptive policy**  
+A scale aware base step uses hull scale and machine epsilon so forward differences are resolvable. An edge cap limits the step at intermediate edge points to at most twenty five percent of the incident edge length. Use a clip operator to enforce lower and upper bounds. Reject steps that would cross the hull.
+
+---
 
 ## Reproducible Dataset
-
 1) Polygons: generate five hundred convex polygons by sampling eight points uniformly in a ten by ten square, then take the convex hull.  
 2) Seeds: use five thousand random seeds per configuration for initial Voronoi centers.  
 3) Region counts: for Lloyd experiments use three through ten regions. For normal flow comparisons use five through ten and also fifteen and thirty and fifty and one hundred.  
 4) Metrics: wall time in seconds, repetition count, and total Lloyd iterations.  
 5) Reference environment: Intel Xeon at 2.20 GHz, memory 13.61 GB, Ubuntu 22.04.4 LTS.
 
-## Experiments and How to Test
+---
 
-### Experiment A: Lloyd with fuzzy centroid and sigma sweep
+## Experiments and How to Test  
+Only Experiments B and C are included. Experiments A and D are removed.
 
-Goal: measure stability and speed from Gaussian weighted centroids and build a calibration table over sigma from one to two hundred fifty.
+### Experiment B: Sigma prediction models for the Lloyd stage
 
-Procedure: for every polygon and seed compute fuzzy centroid using the formulas above and apply rounding to four decimals. Sweep sigma across the range. Record per iteration convergence diagnostics and aggregate runtime, repetition, and total Lloyd iterations per region.
+**Goal**  
+Learn a data driven mapping from polygon features to a suitable sigma so Lloyd updates converge stably with fewer iterations.
 
-Baselines: uniform polygon centroid and any existing centroid heuristics.
+**Data split and protocol**  
+- Instances: five hundred convex polygons as described above  
+- Labels: for each polygon define sigma star as the value that maximizes stability and progress on a calibration table  
+- Seeds: five thousand initializations per configuration to average out sensitivity  
+- Split: five fold cross validation with a fixed global seed, stratified by coarse bins of region count
 
-Outputs: write `results/expA_sigma_sweep.csv` and plots of time versus regions and total iterations versus regions using logarithmic y axes.
+**Features**  
+Perimeter, area, number of sides, angle mean, angle standard deviation, circularity, diagonal ratio, PCA aspect ratio of the vertex cloud, start angle, normalized start radius, and optionally the square root of area to decouple size from shape.
 
-### Experiment B: Sigma prediction models
+**Models and hyperparameters**  
+Multiple Linear Regression with ridge like regularization chosen by inner cross validation.  
+Support Vector Regression with RBF kernel and a grid over C, gamma, and epsilon.  
+Elastic Net with a grid over alpha and l1 ratio.  
+Baseline rule sigma equals kappa times square root of area with kappa tuned by cross validation.
 
-Goal: learn a mapping from polygon shape to sigma.
+**Evaluation metrics**  
+Primary metrics are RMSE of sigma prediction and Spearman rank correlation between predicted sigma and sigma star.  
+Secondary metrics are the induced Lloyd performance when plugging the predicted sigma back into the pipeline including total iterations, repetition count, and wall time.
 
-Procedure: from Experiment A choose sigma* that optimizes stability and progress for each polygon. Train Multiple Regression, SVR, and Elastic Net with cross validation. Report root mean squared error and rank correlation between predicted sigma and sigma*.
+**Outputs**  
+- File `results/expB_sigma_models.csv` with columns  
+  `polygon_id, model, fold, sigma_star, sigma_pred, rmse_fold, spearman_fold`  
+- Trained model files per fold and a final refit on all data  
+- Plots  
+  - Predicted sigma versus target sigma with a y equals x reference line  
+  - Iterations versus regions when using predicted sigma compared with the baseline rule  
+  - Wall time versus regions with log y for a Lloyd only pass with predicted sigma
 
-Outputs: write `results/expB_sigma_models.csv` and save trained model files.
+**Reproducibility and logging**  
+Log `global_seed, fold_seed, model_config_hash, feature_set_hash`.  
+Use four decimal rounding for centroid coordinates.  
+Save all cross validation splits and seeds to `results/expB_cv_splits.json`.
+
+---
 
 ### Experiment C: Normal flow delta policies
 
-Goal: compare the fixed schedule and the adaptive policy that is scale aware and edge capped.
+**Goal**  
+Compare the fixed step schedule against the adaptive scale aware edge capped policy while keeping the upstream Lloyd stage constant.
 
-Procedure: start from the best Lloyd seeds from either uniform or learned sigma. Run normal flow under each policy. Measure iterations, wall time, overshoot rollbacks, and failure rate. Use the region counts listed in the dataset section.
+**Policies**  
+- Fixed schedule as defined above  
+- Adaptive policy with scale aware base step, edge cap of twenty five percent of edge length at edge midpoints, and clipped bounds for interior and vertex updates
 
-Outputs: write `results/expC_delta_compare.csv` and plot normal flow time versus regions on a logarithmic y axis. Report percent time reduction relative to the fixed variant.
+**Test grid**  
+- Regions: five to ten, fifteen, thirty, fifty, one hundred  
+- Seeds: reuse the best Lloyd seeds per instance to isolate the effect of delta  
+- Instances: the same five hundred polygons
 
-### Experiment D: End to end CFP with scaffold constraints
+**Stopping and safety criteria**  
+Convergence when the objective change is below tolerance or when the iteration cap is reached.  
+Overshoot rollback when an update crosses an edge or increases the objective beyond a small margin, then halve the step for that point.  
+Failure when halving reaches delta minimum with no progress for a set number of checks.
 
-Goal: integrate learned sigma Lloyd updates and adaptive delta normal flow in one pipeline with two checkpoints.
 
-Procedure: initialize the polygon and scale it to manufacturing bounds. Apply light jitter to seeds. Run Lloyd with learned sigma and check a geometric error tolerance. If the tolerance is met, run normal flow with the adaptive delta and then rescale. If the tolerance is not met, keep the best seeds, apply light re randomization, and rerun Lloyd before returning to the normal flow stage.
-
-Outputs: write `results/expD_end2end.csv` and export final partition geometries for qualitative inspection.
-
-## Quick Start Run Order
-
-1) Prepare the dataset in the `data` folder.  
-2) Run the experiments in order A, B, C, then D with your runner script.  
-3) Each run writes exactly one CSV into `results` and plots that reproduce the logarithmic y figures for time and iteration counts.
-
-## Notes for Contributors
-
-Keep functions pure when possible. Use deterministic rounding where it affects stopping tests. Always log the random seed and a configuration hash for each run. Write one CSV per experiment with the fields runtime_sec, repetition_max, lloyd_iter_total, success_flag, and a configuration hash.
