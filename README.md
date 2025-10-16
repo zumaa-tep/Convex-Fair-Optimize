@@ -27,5 +27,5 @@ On five hundred convex polygons with five thousand random seeds per configuratio
 ## Installation
 Use Python version 3.10 or newer. Install the following libraries: NumPy, SciPy, scikit learn, Shapely, Matplotlib, Pandas, TQDM.
 
-for more detail https://drive.google.com/drive/folders/1FP7-zI_b0xvFNCW_srfofHUaVRmqUCcV?usp=sharing
+for more detail https://drive.google.com/drive/folders/1FP7-zI_b0xvFNCW_srfofHUaVRmqUCcV?usp=sharing (icsec 2025)
 
