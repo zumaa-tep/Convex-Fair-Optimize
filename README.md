@@ -29,6 +29,6 @@ On five hundred convex polygons with five thousand random seeds per configuratio
 ## Installation
 Use Python version 3.10 or newer. Install the following libraries: NumPy, SciPy, scikit learn, Shapely, Matplotlib, Pandas, TQDM.
 
-![CFP Pipeline](assets/partition_example.png)
+![CFP Pipeline](QR-code)
 for more detail
 
