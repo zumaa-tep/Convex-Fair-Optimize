@@ -29,3 +29,5 @@ Use Python version 3.10 or newer. Install the following libraries: NumPy, SciPy,
 
 for more detail https://drive.google.com/drive/folders/1FP7-zI_b0xvFNCW_srfofHUaVRmqUCcV?usp=sharing (icsec 2025)
 
+experiment lloyd more detail in https://colab.research.google.com/drive/1lZ_m4WTjkdjbhf0xEQbbnQcFkmKgeMrj?usp=sharing
+experiment Normal Flow  more detail in https://colab.research.google.com/drive/1I3N7qlNabhrb5q_alHmyB1AQL7JcX7Ka?usp=sharing
